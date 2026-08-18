@@ -45,3 +45,4 @@ Tout est dans `index.html` :
 - `NEG` : mots-clés éliminatoires.
 - `LOCATIONS` : villes proposées (lat/lon).
 - Seuil "Recommandées" : `j.score>=55` dans `TABS`.
+  
