@@ -133,6 +133,13 @@ details.cfg[open] summary::before{transform:rotate(90deg)}
 .tgt-import .row{display:flex;gap:8px;margin-top:8px;align-items:center}
 .tgt-import .h{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px}
 @media(max-width:720px){ .tgt-row{grid-template-columns:22px 1fr 1fr;grid-template-areas:"cb nm nm" "cb cat cat" "cb stars stat" "cb del del"} }
+
+/* ---------- lexicon transparency panel ---------- */
+.lex-group{margin-bottom:16px}
+.lex-group h4{font-size:13px;font-weight:800;margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px}
+.lex-group .chips{margin-top:0}
+.lex-group .chip{font-size:11px}
+.lex-group .chip .w{opacity:.65;margin-left:3px}
 footer{padding:26px 22px;color:var(--faint);font-size:11.5px;font-family:var(--mono);border-top:1px solid var(--line);margin-top:30px}
 footer a{color:var(--muted)}
 @media(max-width:720px){
@@ -253,6 +260,19 @@ footer a{color:var(--muted)}
       <button class="btn primary" id="kw-add">+ Ajouter</button>
     </div>
     <div class="tgt-table" id="kw-table"></div>
+  </div>
+</details>
+
+<details class="cfg" id="lex-panel">
+  <summary>🔍 TOUS LES MOTS-CLÉS DU MOTEUR — transparence totale, rien de caché</summary>
+  <div class="cfg-body" style="grid-template-columns:1fr">
+    <p class="hint">
+      Liste exacte, générée directement depuis le code qui tourne dans cette page — pas une description
+      approximative. <code>?</code> = pluriel optionnel, <code>\b</code> = mot entier (pas une sous-chaîne
+      d'un autre mot). Le chiffre entre parenthèses est le poids : trouvé dans le <b>titre</b> de l'offre,
+      il est automatiquement ×3. Les mots-clés personnalisés que tu ajoutes ci-dessus s'ajoutent à cette liste.
+    </p>
+    <div id="lex-list"></div>
   </div>
 </details>
 
@@ -1587,6 +1607,35 @@ document.getElementById("tgt-reset").addEventListener("click",()=>{
   saveTargets(); recompute(); renderTargets(); render();
 });
 
+/* ============ TRANSPARENCE : TOUS LES MOTS-CLÉS DU MOTEUR ============ */
+// extrait le pattern lisible depuis la regex réelle utilisée par analyze() — jamais désynchronisé du code qui tourne
+function readablePattern(re){ return re.source.slice(5,-1); } // retire le wrapping \b(?: ... )
+function renderLexicon(){
+  const wrap = document.getElementById("lex-list");
+  let html = "";
+  for(const [dom,def] of Object.entries(LEX)){
+    if(dom==="CUSTOM" || !def.kws.length) continue;
+    html += `<div class="lex-group"><h4 style="color:${def.color}">${esc(def.label)}</h4><div class="chips">`;
+    for(const [re,w] of def.kws){
+      html += `<span class="chip dom" style="border-color:${def.color};color:${def.color}">${esc(readablePattern(re))}<span class="w">(${w})</span></span>`;
+    }
+    html += `</div></div>`;
+  }
+  if(customKw.length){
+    html += `<div class="lex-group"><h4 style="color:var(--blue)">Mots-clés personnalisés (ajoutés par toi)</h4><div class="chips">`;
+    for(const k of customKw){
+      html += `<span class="chip" style="${k.enabled===false?'opacity:.4;':''}border-color:var(--blue);color:var(--blue)">${esc(k.word)}<span class="w">(${k.weight}${k.enabled===false?', désactivé':''})</span></span>`;
+    }
+    html += `</div></div>`;
+  }
+  html += `<div class="lex-group"><h4 style="color:var(--red)">Mots-clés éliminatoires (malus au score)</h4><div class="chips">`;
+  for(const [re,w] of NEG){
+    html += `<span class="chip neg">${esc(readablePattern(re))}<span class="w">(−${w})</span></span>`;
+  }
+  html += `</div></div>`;
+  wrap.innerHTML = html;
+}
+
 /* ============ PANNEAU MOTS-CLÉS PERSONNALISÉS ============ */
 function saveKw(){ store.set("afb_customkw", customKw); }
 function renderKw(){
@@ -1614,13 +1663,13 @@ document.getElementById("kw-add").addEventListener("click",()=>{
   customKw.push({word, weight, enabled:true});
   saveKw();
   document.getElementById("kw-word").value = "";
-  recompute(); renderKw(); render();
+  recompute(); renderKw(); renderLexicon(); render();
 });
 document.getElementById("kw-table").addEventListener("click",e=>{
   const row = e.target.closest(".tgt-row"); if(!row) return;
   const i = +row.dataset.i;
-  if(e.target.classList.contains("del")){ customKw.splice(i,1); saveKw(); recompute(); renderKw(); render(); }
-  if(e.target.classList.contains("kw-on")){ customKw[i].enabled = e.target.checked; saveKw(); recompute(); renderKw(); render(); }
+  if(e.target.classList.contains("del")){ customKw.splice(i,1); saveKw(); recompute(); renderKw(); renderLexicon(); render(); }
+  if(e.target.classList.contains("kw-on")){ customKw[i].enabled = e.target.checked; saveKw(); recompute(); renderKw(); renderLexicon(); render(); }
 });
 
 /* ============ CSV ============ */
@@ -1666,7 +1715,7 @@ document.getElementById("list").addEventListener("click",e=>{
 document.getElementById("btn-load").addEventListener("click",loadAll);
 document.getElementById("btn-csv").addEventListener("click",exportCsv);
 
-renderTargets(); renderKw(); // affiche les listes même avant le premier chargement
+renderTargets(); renderKw(); renderLexicon(); // affiche les listes même avant le premier chargement
 loadAll(); // chargement auto au démarrage
 </script>
 </body>
