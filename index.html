@@ -168,11 +168,20 @@ footer a{color:var(--muted)}
 
 <div class="wrap">
 
-<details class="cfg">
+<details class="cfg" open>
   <summary>PARAMÈTRES DE RECHERCHE — codes ROME, zones, rayon, diplôme</summary>
   <div class="cfg-body">
+    <div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--volt-dim);border-radius:8px;padding:10px 14px">
+      <input type="checkbox" id="romes-off" checked style="width:18px;height:18px;accent-color:var(--volt);cursor:pointer">
+      <label for="romes-off" style="margin:0;text-transform:none;font-size:13px;color:var(--ink);letter-spacing:0;cursor:pointer">
+        <b style="color:var(--volt)">Recherche large (recommandé)</b> — ignore les codes ROME ci-dessous, récupère tous les métiers
+        et laisse le moteur de texte + la liste d'entreprises faire le tri. Évite de rater une offre mal classée
+        (ex: "ingénieur composants footwear" chez Decathlon n'est ni en H1206 ni en H1210 ni en H1204/H1502/H1205 —
+        impossible de deviner tous les codes ROME possibles à l'avance).
+      </label>
+    </div>
     <div>
-      <label for="romes">Codes ROME interrogés (max 20, séparés par des virgules)</label>
+      <label for="romes">Codes ROME (utilisés seulement si "recherche large" est décoché)</label>
       <input type="text" id="romes" value="H1206,H1210,H1204,H1502,H1205">
     </div>
     <div>
@@ -200,14 +209,13 @@ footer a{color:var(--muted)}
       <div class="locchips" id="locchips"></div>
     </div>
     <p class="hint">
-      ROME utiles pour ton profil : <code>H1206</code> ingénierie études &amp; R&amp;D · <code>H1210</code> technicien études/essais R&amp;D ·
-      <code>H1204</code> design industriel · <code>H1502</code> ingénierie qualité · <code>H1205</code> études-modèles
-      matériaux souples (footwear, textile technique — ajouté car des offres comme "ingénieur composants footwear"
-      chez Decathlon passent par ce code, pas par les 4 premiers). Le filtrage fin (sport, essais terrain,
-      ergonomie…) se fait ensuite par analyse du texte des offres, pas par ces codes.
-      ⚠️ Sans localisation, l'API trie uniquement par date décroissante et peut ne jamais remonter une offre
-      un peu ancienne publiée loin de tes zones actives — active plus de villes ci-dessus si tu veux une
-      couverture nationale plus fiable.
+      En recherche large, l'API renvoie tous les métiers pour chaque zone géographique interrogée (triés par
+      distance), et c'est le moteur de score (mots-clés + entreprises ciblées) qui filtre ensuite ce qui te
+      correspond — plus aucune offre n'est perdue à cause d'un code ROME mal deviné. Décoche uniquement si tu
+      veux explicitement restreindre à quelques métiers précis (recherche plus rapide, mais plus risquée).
+      ⚠️ Sans zone géographique active, l'API trie uniquement par date décroissante et peut ne jamais remonter
+      une offre un peu ancienne publiée loin de tes zones actives — active plus de villes ci-dessus (ou active
+      toutes les zones) pour une couverture nationale fiable.
     </p>
   </div>
 </details>
@@ -1380,6 +1388,7 @@ function normalize(j){
 async function loadAll(){
   const btn = document.getElementById("btn-load"); btn.disabled = true;
   const prog = document.getElementById("progress");
+  const romesOff = document.getElementById("romes-off").checked;
   const romes = document.getElementById("romes").value.replace(/\s/g,"");
   const radius = document.getElementById("radius").value || 60;
   const dip = document.getElementById("diploma").value;
@@ -1387,8 +1396,9 @@ async function loadAll(){
   const map = new Map(); let errs = 0;
   for(let i=0;i<zones.length;i++){
     const z = zones[i];
-    prog.textContent = `Requête ${i+1}/${zones.length} — ${z.name}…`;
-    const p = { romes };
+    prog.textContent = `Requête ${i+1}/${zones.length} — ${z.name}${romesOff?' (tous métiers)':''}…`;
+    const p = {};
+    if(!romesOff && romes) p.romes = romes;
     if(!z.nogeo){ p.latitude=z.lat; p.longitude=z.lon; p.radius=radius; }
     if(dip) p.target_diploma_level = dip;
     try{
@@ -1401,7 +1411,7 @@ async function loadAll(){
   }
   jobs = [...map.values()].map(n => Object.assign(n, analyze(n)));
   jobs.sort((a,b)=> b.score-a.score || (b.created?.getTime()||0)-(a.created?.getTime()||0));
-  prog.textContent = `${jobs.length} offres uniques analysées (${zones.length} zones${errs?`, ${errs} erreurs`:""}).`;
+  prog.textContent = `${jobs.length} offres uniques analysées (${zones.length} zones${romesOff?', tous métiers':''}${errs?`, ${errs} erreurs`:""}).`;
   btn.disabled = false;
   render();
   // marquer comme vues APRÈS rendu (le badge NEW reste pour cette session)
@@ -1712,6 +1722,12 @@ document.getElementById("list").addEventListener("click",e=>{
   if(s){ statuses[id] = statuses[id]===s ? undefined : s; if(!statuses[id]) delete statuses[id];
          store.set("afb_status",statuses); render(); }
 });
+document.getElementById("romes-off").addEventListener("change",e=>{
+  document.getElementById("romes").disabled = e.target.checked;
+  document.getElementById("romes").style.opacity = e.target.checked ? .4 : 1;
+});
+document.getElementById("romes").disabled = document.getElementById("romes-off").checked;
+document.getElementById("romes").style.opacity = document.getElementById("romes-off").checked ? .4 : 1;
 document.getElementById("btn-load").addEventListener("click",loadAll);
 document.getElementById("btn-csv").addEventListener("click",exportCsv);
 
