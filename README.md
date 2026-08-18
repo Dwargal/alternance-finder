@@ -38,6 +38,28 @@ alternance-finder/
 - Statuts ★ favori / ✓ candidaté / ✕ rejeté persistés en localStorage,
   badge NEW sur les offres jamais vues, export CSV de la vue filtrée.
 
+## Couverture élargie (suite à un cas manqué : Decathlon Offer & Design)
+
+Trois corrections après qu'une offre réelle (ingénieur composants footwear, Decathlon Offer &
+Design, Wattrelos) soit passée à travers :
+
+- **ROME élargi** : ajout de `H1205` (études-modèles industrie des matériaux souples — couvre
+  les rôles ingénierie textile/footwear que H1206/H1210/H1204/H1502 ne couvrent pas toujours).
+- **Zones actives par défaut élargies** (9 au lieu de 3 : France entière, Grenoble, Lyon, Paris,
+  Toulouse, Bordeaux, Nantes, Lille, Marseille) — sans localisation, l'API trie uniquement par
+  date décroissante et peut ne jamais faire remonter une offre un peu ancienne publiée loin des
+  zones actives. Rayon en select (10/30/60/100 km, les seuls paliers acceptés par l'API — un
+  input libre pouvait envoyer une valeur invalide).
+- **Lexique moins strict** : ajout de mots-clés standalone moins exigeants (`conception` seul,
+  `composants`, `équipements`, `laboratoire`, `footwear/chaussants/upper/semelles`,
+  `process de décoration`, `caractérisation`…) qui ne demandaient auparavant qu'une phrase
+  complète (ex. "conception produits") pour compter.
+- **Fallback générique Decathlon** : toute offre dont l'entreprise commence par "Decathlon"
+  (n'importe quel département/sous-marque, même non listé dans les 162 entreprises ciblées)
+  est remontée à un score plancher de 62, sauf si le texte sent clairement la vente/caisse
+  (détection retail existante). Étiquetée "département non répertorié — à vérifier au cas par
+  cas" pour rester transparent sur le niveau de confiance.
+
 ## Entreprises ciblées
 
 Panneau "Entreprises ciblées" (sous les paramètres de recherche) : liste éditable de marques
