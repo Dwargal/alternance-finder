@@ -102,6 +102,35 @@ details.cfg[open] summary::before{transform:rotate(90deg)}
 .desc.open{display:block}
 .desc mark{background:rgba(200,243,29,.22);color:var(--volt);border-radius:2px;padding:0 1px}
 .empty{padding:50px 20px;text-align:center;color:var(--faint);font-family:var(--mono);font-size:13px;border:1px dashed var(--line);border-radius:10px}
+
+/* ---------- match badge on cards ---------- */
+.matchtag{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:4px;background:rgba(200,243,29,.14);border:1px solid var(--volt-dim);color:var(--volt);margin-top:6px}
+.matchtag .stars{letter-spacing:1px}
+
+/* ---------- targets panel ---------- */
+.tgt-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.tgt-toolbar input[type=text]{background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:7px 10px;font-family:var(--font);font-size:13px}
+.tgt-toolbar input#tgt-name{flex:1;min-width:160px}
+.tgt-toolbar input#tgt-cat{flex:1;min-width:140px}
+.tgt-stars{display:flex;gap:1px;font-size:16px;cursor:pointer;user-select:none}
+.tgt-stars span{color:var(--line)}
+.tgt-stars span.on{color:var(--volt)}
+.tgt-table{display:grid;gap:6px;margin-top:14px}
+.tgt-row{display:grid;grid-template-columns:1fr 1fr 90px 90px 30px;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.tgt-row.matched{border-color:var(--volt-dim)}
+.tgt-row .nm{font-weight:700;font-size:13.5px}
+.tgt-row .cat{color:var(--muted);font-size:12px}
+.tgt-row .stars-view{color:var(--volt);font-size:12px;letter-spacing:1px}
+.tgt-row .stat-mini{font-family:var(--mono);font-size:11px}
+.tgt-row .stat-mini.found{color:var(--volt)}
+.tgt-row .stat-mini.none{color:var(--faint)}
+.tgt-row button.del{background:none;border:none;color:var(--faint);cursor:pointer;font-size:15px}
+.tgt-row button.del:hover{color:var(--red)}
+.tgt-import{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.tgt-import textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:10px;font-family:var(--mono);font-size:12px;min-height:80px;resize:vertical}
+.tgt-import .row{display:flex;gap:8px;margin-top:8px;align-items:center}
+.tgt-import .h{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px}
+@media(max-width:720px){ .tgt-row{grid-template-columns:1fr 1fr;grid-template-areas:"nm nm" "cat cat" "stars stat" "del del"} }
 footer{padding:26px 22px;color:var(--faint);font-size:11.5px;font-family:var(--mono);border-top:1px solid var(--line);margin-top:30px}
 footer a{color:var(--muted)}
 @media(max-width:720px){
@@ -164,6 +193,35 @@ footer a{color:var(--muted)}
   </div>
 </details>
 
+<details class="cfg" id="tgt-panel">
+  <summary>ENTREPRISES CIBLÉES — <span id="tgt-count">0</span> entreprises · toute offre chez l'une d'elles est boostée en priorité</summary>
+  <div class="cfg-body" style="grid-template-columns:1fr">
+    <p class="hint">
+      L'API ne renvoie que les offres réellement postées sur La bonne alternance / France Travail — beaucoup de petites
+      marques sport recrutent en direct ou par candidature spontanée et n'y apparaissent jamais. Cette liste sert à deux
+      choses : booster fortement le score de toute offre venant d'une de ces entreprises (même si le texte est pauvre en
+      mots-clés), et te signaler lesquelles n'ont <b>aucune offre en ce moment</b> — donc à viser en spontané.
+      Note ★ = importance pour toi (5 = priorité max).
+    </p>
+    <div class="tgt-toolbar">
+      <input type="text" id="tgt-name" placeholder="Nom de l'entreprise">
+      <input type="text" id="tgt-cat" placeholder="Domaine (ex: Vélo, Trail, Protection…)">
+      <span class="tgt-stars" id="tgt-stars-input" data-v="4">★★★★<span>★</span></span>
+      <button class="btn primary" id="tgt-add">+ Ajouter</button>
+    </div>
+    <div class="tgt-table" id="tgt-table"></div>
+    <div class="tgt-import">
+      <div class="h">Import en masse (une ligne = <code>Nom;Catégorie;Priorité</code>, priorité 1–5 optionnelle)</div>
+      <textarea id="tgt-bulk" placeholder="Origine Cycles;Vélo route;5&#10;Samaya;Bivouac;5&#10;..."></textarea>
+      <div class="row">
+        <button class="btn" id="tgt-bulk-add">Importer ces lignes</button>
+        <button class="btn" id="tgt-export">Copier la liste actuelle</button>
+        <button class="btn" id="tgt-reset" style="margin-left:auto;color:var(--red)">Réinitialiser à la liste par défaut (162)</button>
+      </div>
+    </div>
+  </div>
+</details>
+
 <div class="toolbar">
   <div class="tabs" id="tabs"></div>
   <div class="spacer"></div>
@@ -182,6 +240,11 @@ footer a{color:var(--muted)}
     <option value="30">≤ 30 jours</option>
     <option value="60">≤ 60 jours</option>
   </select>
+  <select id="f-sort">
+    <option value="score">Trier : score global</option>
+    <option value="match">Trier : correspondance entreprise cible</option>
+    <option value="date">Trier : date (récent d'abord)</option>
+  </select>
   <span class="range">score ≥ <input type="range" id="f-score" min="0" max="100" step="5" value="0"><output id="f-score-out">0</output></span>
   <input type="search" id="f-q" placeholder="Filtrer (poste, ville, entreprise…)">
   <button class="btn" id="btn-csv">Exporter CSV</button>
@@ -190,6 +253,7 @@ footer a{color:var(--muted)}
 
 <div id="progress"></div>
 <div class="list" id="list"></div>
+<div id="tgt-missing"></div>
 
 </div>
 
@@ -300,6 +364,843 @@ const NEG = [
 
 const strip = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 
+/* ============ ENTREPRISES CIBLÉES (watchlist) ============ */
+const DEFAULT_TARGETS = [
+  {
+    "name": "ARVA",
+    "cat": "Sécurité montagne",
+    "priority": 5
+  },
+  {
+    "name": "AddBike",
+    "cat": "Vélo / mobilité",
+    "priority": 5
+  },
+  {
+    "name": "Babolat",
+    "cat": "Tennis / padel",
+    "priority": 5
+  },
+  {
+    "name": "Beuchat",
+    "cat": "Plongée",
+    "priority": 5
+  },
+  {
+    "name": "Caminade",
+    "cat": "Vélo / cadres",
+    "priority": 5
+  },
+  {
+    "name": "Cimalp",
+    "cat": "Trail / outdoor",
+    "priority": 5
+  },
+  {
+    "name": "Corima",
+    "cat": "Composites carbone / roues",
+    "priority": 5
+  },
+  {
+    "name": "Cornilleau",
+    "cat": "Tennis de table",
+    "priority": 5
+  },
+  {
+    "name": "Cyfac",
+    "cat": "Vélo / composites",
+    "priority": 5
+  },
+  {
+    "name": "Decathlon Protection Engineering Center",
+    "cat": "R&D protections",
+    "priority": 5
+  },
+  {
+    "name": "Decathlon SportsLab",
+    "cat": "Sciences du sport",
+    "priority": 5
+  },
+  {
+    "name": "Douze Cycles",
+    "cat": "Vélo cargo",
+    "priority": 5
+  },
+  {
+    "name": "F-One",
+    "cat": "Kite / foil",
+    "priority": 5
+  },
+  {
+    "name": "GONG Galaxy",
+    "cat": "Surf / foil",
+    "priority": 5
+  },
+  {
+    "name": "Guidetti",
+    "cat": "Trail / randonnée",
+    "priority": 5
+  },
+  {
+    "name": "Helite",
+    "cat": "Airbags / protection",
+    "priority": 5
+  },
+  {
+    "name": "In&motion",
+    "cat": "Airbags sportifs",
+    "priority": 5
+  },
+  {
+    "name": "Infl8",
+    "cat": "Protection / matériaux",
+    "priority": 5
+  },
+  {
+    "name": "Jonathan & Fletcher",
+    "cat": "Textile sportif",
+    "priority": 5
+  },
+  {
+    "name": "Look Cycle",
+    "cat": "Vélo / fixations",
+    "priority": 5
+  },
+  {
+    "name": "Manera",
+    "cat": "Sports nautiques",
+    "priority": 5
+  },
+  {
+    "name": "Mavic",
+    "cat": "Vélo",
+    "priority": 5
+  },
+  {
+    "name": "Moustache Bikes",
+    "cat": "VAE",
+    "priority": 5
+  },
+  {
+    "name": "Nautiraid",
+    "cat": "Kayak",
+    "priority": 5
+  },
+  {
+    "name": "Origine Cycles",
+    "cat": "Vélo route",
+    "priority": 5
+  },
+  {
+    "name": "PLUM",
+    "cat": "Ski",
+    "priority": 5
+  },
+  {
+    "name": "Picture Organic Clothing",
+    "cat": "Outdoor / textile",
+    "priority": 5
+  },
+  {
+    "name": "Racer",
+    "cat": "Gants / protections",
+    "priority": 5
+  },
+  {
+    "name": "RaidLight",
+    "cat": "Trail",
+    "priority": 5
+  },
+  {
+    "name": "Rotomod",
+    "cat": "Kayak / plasturgie",
+    "priority": 5
+  },
+  {
+    "name": "Salomon",
+    "cat": "Montagne / trail running",
+    "priority": 5
+  },
+  {
+    "name": "Samaya",
+    "cat": "Tentes / bivouac",
+    "priority": 5
+  },
+  {
+    "name": "Sidas",
+    "cat": "Biomécanique / semelles",
+    "priority": 5
+  },
+  {
+    "name": "Soöruz",
+    "cat": "Combinaisons surf",
+    "priority": 5
+  },
+  {
+    "name": "Sroka Company",
+    "cat": "Foil / SUP",
+    "priority": 5
+  },
+  {
+    "name": "TSL Outdoor",
+    "cat": "Raquettes à neige",
+    "priority": 5
+  },
+  {
+    "name": "Tecnifibre",
+    "cat": "Tennis",
+    "priority": 5
+  },
+  {
+    "name": "Victoire Cycles",
+    "cat": "Vélo / cadres",
+    "priority": 5
+  },
+  {
+    "name": "Wichard",
+    "cat": "Nautisme / ingénierie",
+    "priority": 5
+  },
+  {
+    "name": "Zéfal",
+    "cat": "Accessoires vélo",
+    "priority": 5
+  },
+  {
+    "name": "ASF 4.0",
+    "cat": "Chaussure française relocalisée",
+    "priority": 4
+  },
+  {
+    "name": "Advanced Shoe Factory 4.0",
+    "cat": "Chaussure / usine 4.0",
+    "priority": 4
+  },
+  {
+    "name": "Aqua Lung France",
+    "cat": "Plongée",
+    "priority": 4
+  },
+  {
+    "name": "Artengo",
+    "cat": "Raquettes (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Ayaq",
+    "cat": "Textile outdoor",
+    "priority": 4
+  },
+  {
+    "name": "Beal",
+    "cat": "Cordes escalade",
+    "priority": 4
+  },
+  {
+    "name": "Bic Sport / Tahe",
+    "cat": "Kayak / SUP",
+    "priority": 4
+  },
+  {
+    "name": "Black Crows",
+    "cat": "Ski",
+    "priority": 4
+  },
+  {
+    "name": "Blue Ice",
+    "cat": "Alpinisme",
+    "priority": 4
+  },
+  {
+    "name": "Bollé",
+    "cat": "Lunettes / casques",
+    "priority": 4
+  },
+  {
+    "name": "CILAO",
+    "cat": "Sacs / trail",
+    "priority": 4
+  },
+  {
+    "name": "CRITT Sport Loisirs",
+    "cat": "Centre R&D sport",
+    "priority": 4
+  },
+  {
+    "name": "CTC Groupe",
+    "cat": "Essais chaussure/textile",
+    "priority": 4
+  },
+  {
+    "name": "Chamatex",
+    "cat": "Textile technique",
+    "priority": 4
+  },
+  {
+    "name": "Commencal",
+    "cat": "VTT",
+    "priority": 4
+  },
+  {
+    "name": "Cousin Trestec",
+    "cat": "Cordages techniques",
+    "priority": 4
+  },
+  {
+    "name": "Cébé",
+    "cat": "Lunettes sport",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Artengo",
+    "cat": "Raquettes",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Kalenji",
+    "cat": "Running",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Kipsta",
+    "cat": "Football",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Olaian",
+    "cat": "Surf",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Quechua",
+    "cat": "Randonnée",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Rockrider",
+    "cat": "VTT",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Simond",
+    "cat": "Alpinisme",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Tribord",
+    "cat": "Voile",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Van Rysel",
+    "cat": "Vélo route",
+    "priority": 4
+  },
+  {
+    "name": "Decathlon — Wedze",
+    "cat": "Ski",
+    "priority": 4
+  },
+  {
+    "name": "Duke Racing Wheels",
+    "cat": "Roues vélo",
+    "priority": 4
+  },
+  {
+    "name": "Dynastar",
+    "cat": "Ski",
+    "priority": 4
+  },
+  {
+    "name": "Eovolt",
+    "cat": "Vélo électrique",
+    "priority": 4
+  },
+  {
+    "name": "Evadict",
+    "cat": "Trail (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "HumanFab",
+    "cat": "Laboratoire biomécanique",
+    "priority": 4
+  },
+  {
+    "name": "Hutchinson Cycling",
+    "cat": "Pneus vélo",
+    "priority": 4
+  },
+  {
+    "name": "Itiwit",
+    "cat": "Kayak/SUP (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Joker Bike",
+    "cat": "Composants vélo innovants",
+    "priority": 4
+  },
+  {
+    "name": "Julbo",
+    "cat": "Lunettes sport",
+    "priority": 4
+  },
+  {
+    "name": "Kimberfeel",
+    "cat": "Chaussures outdoor",
+    "priority": 4
+  },
+  {
+    "name": "Kiprun",
+    "cat": "Running (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Kipsta",
+    "cat": "Football (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Kuikma",
+    "cat": "Padel (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Labosport",
+    "cat": "Essais / certification sport",
+    "priority": 4
+  },
+  {
+    "name": "Lagoped",
+    "cat": "Outdoor / éco-conception",
+    "priority": 4
+  },
+  {
+    "name": "Lapierre",
+    "cat": "Vélo",
+    "priority": 4
+  },
+  {
+    "name": "Look",
+    "cat": "Ski / fixations",
+    "priority": 4
+  },
+  {
+    "name": "Looking for Wild",
+    "cat": "Escalade / outdoor",
+    "priority": 4
+  },
+  {
+    "name": "Millet",
+    "cat": "Montagne",
+    "priority": 4
+  },
+  {
+    "name": "Olaian",
+    "cat": "Surf (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Petzl",
+    "cat": "Alpinisme / sécurité",
+    "priority": 4
+  },
+  {
+    "name": "Podiatech",
+    "cat": "Semelles orthopédiques",
+    "priority": 4
+  },
+  {
+    "name": "Quechua",
+    "cat": "Randonnée (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Rockrider",
+    "cat": "VTT (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Rossignol",
+    "cat": "Ski",
+    "priority": 4
+  },
+  {
+    "name": "Saint-Jacques Wetsuits",
+    "cat": "Combinaisons surf",
+    "priority": 4
+  },
+  {
+    "name": "Saola",
+    "cat": "Chaussures éco-conçues",
+    "priority": 4
+  },
+  {
+    "name": "Simond",
+    "cat": "Alpinisme (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Stronglight",
+    "cat": "Composants vélo",
+    "priority": 4
+  },
+  {
+    "name": "Subea",
+    "cat": "Plongée (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "TA Specialités",
+    "cat": "Composants vélo",
+    "priority": 4
+  },
+  {
+    "name": "Time Bicycles",
+    "cat": "Vélo",
+    "priority": 4
+  },
+  {
+    "name": "Tribord",
+    "cat": "Voile (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Urge Bike Products",
+    "cat": "Protections vélo",
+    "priority": 4
+  },
+  {
+    "name": "Van Rysel",
+    "cat": "Vélo route (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Veets",
+    "cat": "Trail / chaussants",
+    "priority": 4
+  },
+  {
+    "name": "Wedze",
+    "cat": "Ski (Decathlon)",
+    "priority": 4
+  },
+  {
+    "name": "Wise",
+    "cat": "Fixations snowboard",
+    "priority": 4
+  },
+  {
+    "name": "Yuba Bikes",
+    "cat": "Vélo cargo",
+    "priority": 4
+  },
+  {
+    "name": "ZAG",
+    "cat": "Ski",
+    "priority": 4
+  },
+  {
+    "name": "Arcade Cycles",
+    "cat": "Vélo",
+    "priority": 3
+  },
+  {
+    "name": "Aulp",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Bénéteau",
+    "cat": "Nautisme",
+    "priority": 3
+  },
+  {
+    "name": "CETI",
+    "cat": "Textile technique",
+    "priority": 3
+  },
+  {
+    "name": "CETIM",
+    "cat": "Mécanique / essais",
+    "priority": 3
+  },
+  {
+    "name": "Cairn Sport",
+    "cat": "Casques ski",
+    "priority": 3
+  },
+  {
+    "name": "Circle Sportswear",
+    "cat": "Textile running",
+    "priority": 3
+  },
+  {
+    "name": "Coleen",
+    "cat": "Vélo urbain",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Caperlan",
+    "cat": "Pêche",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Corength",
+    "cat": "Musculation",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Domyos",
+    "cat": "Fitness",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Fouganza",
+    "cat": "Équitation",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Inesis",
+    "cat": "Golf",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Nabaiji",
+    "cat": "Natation",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Oxelo",
+    "cat": "Roller / skate",
+    "priority": 3
+  },
+  {
+    "name": "Decathlon — Solognac",
+    "cat": "Chasse / outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Degré7",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Duvillard",
+    "cat": "Ski",
+    "priority": 3
+  },
+  {
+    "name": "Eider",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Ekoi",
+    "cat": "Équipement cycliste",
+    "priority": 3
+  },
+  {
+    "name": "Ferrino France",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Galian",
+    "cat": "Vélo urbain",
+    "priority": 3
+  },
+  {
+    "name": "HXR Components",
+    "cat": "Composants vélo",
+    "priority": 3
+  },
+  {
+    "name": "Hoalen",
+    "cat": "Surf",
+    "priority": 3
+  },
+  {
+    "name": "Hoka France",
+    "cat": "Chaussures running",
+    "priority": 3
+  },
+  {
+    "name": "Hungaria",
+    "cat": "Ballons / équipements",
+    "priority": 3
+  },
+  {
+    "name": "IFTH",
+    "cat": "Institut textile",
+    "priority": 3
+  },
+  {
+    "name": "Kenny Racing",
+    "cat": "Équipement moto/VTT",
+    "priority": 3
+  },
+  {
+    "name": "Kerma",
+    "cat": "Bâtons ski",
+    "priority": 3
+  },
+  {
+    "name": "Lafuma",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Lange",
+    "cat": "Ski",
+    "priority": 3
+  },
+  {
+    "name": "Le Coq Sportif",
+    "cat": "Textile sport",
+    "priority": 3
+  },
+  {
+    "name": "Mach1",
+    "cat": "Jantes vélo",
+    "priority": 3
+  },
+  {
+    "name": "Mares France",
+    "cat": "Plongée",
+    "priority": 3
+  },
+  {
+    "name": "O2Feel",
+    "cat": "Vélo électrique",
+    "priority": 3
+  },
+  {
+    "name": "OSM'OSE",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Opinel",
+    "cat": "Outdoor / coutellerie",
+    "priority": 3
+  },
+  {
+    "name": "Oxbow",
+    "cat": "Surfwear",
+    "priority": 3
+  },
+  {
+    "name": "Plastimo",
+    "cat": "Équipement nautique",
+    "priority": 3
+  },
+  {
+    "name": "Rip Curl Europe",
+    "cat": "Surf",
+    "priority": 3
+  },
+  {
+    "name": "Riverside",
+    "cat": "Vélo trekking (Decathlon)",
+    "priority": 3
+  },
+  {
+    "name": "Roc Amadeus",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Salewa France",
+    "cat": "Montagne",
+    "priority": 3
+  },
+  {
+    "name": "Scott Sports",
+    "cat": "Vélo / ski",
+    "priority": 3
+  },
+  {
+    "name": "Serak",
+    "cat": "Outdoor",
+    "priority": 3
+  },
+  {
+    "name": "Shark Helmets",
+    "cat": "Casques",
+    "priority": 3
+  },
+  {
+    "name": "Starway",
+    "cat": "Vélo électrique",
+    "priority": 3
+  },
+  {
+    "name": "Sunn",
+    "cat": "VTT",
+    "priority": 3
+  },
+  {
+    "name": "Takoon",
+    "cat": "Kitesurf",
+    "priority": 3
+  },
+  {
+    "name": "Therm-ic",
+    "cat": "Chauffants sport",
+    "priority": 3
+  },
+  {
+    "name": "Typhoon France",
+    "cat": "Combinaisons",
+    "priority": 3
+  },
+  {
+    "name": "Uhlsport France",
+    "cat": "Football",
+    "priority": 3
+  },
+  {
+    "name": "Ultima Mobility",
+    "cat": "Mobilité électrique",
+    "priority": 3
+  },
+  {
+    "name": "Veja",
+    "cat": "Chaussures éco-conçues",
+    "priority": 3
+  },
+  {
+    "name": "Vertical",
+    "cat": "Escalade",
+    "priority": 3
+  }
+];
+
+let targets = store.get("afb_targets", null);
+if(!targets || !targets.length) targets = DEFAULT_TARGETS.map(t=>({...t}));
+
+// normalise un nom d'entreprise pour comparaison (retire termes juridiques, ponctuation)
+function normCo(s){
+  return strip(s||"")
+    .replace(/\b(sas|sarl|sa|sasu|eurl|groupe|group|france|europe|international|sport|sports)\b/g,"")
+    .replace(/[^a-z0-9]/g,"");
+}
+function matchTarget(companyName){
+  const nc = normCo(companyName);
+  if(!nc || nc.length<3) return null;
+  let best = null;
+  for(const t of targets){
+    const nt = normCo(t.name);
+    if(!nt || nt.length<3) continue;
+    if(nc===nt || nc.includes(nt) || nt.includes(nc)){
+      if(!best || t.priority>best.priority) best = t;
+    }
+  }
+  return best;
+}
+
 function analyze(job){
   const title = strip(job.title);
   const body  = strip([job.description, job.companyDesc, job.company].filter(Boolean).join("\n"));
@@ -325,17 +1226,25 @@ function analyze(job){
   if(domains.ESSAIS && domains.ERGO) raw += 12;
   if(domains.ESSAIS && domains.PRODUIT) raw += 8;
   raw -= penalty;
-  const score = Math.max(0, Math.min(100, Math.round(raw*0.75)));
-  return { score, domains, hits, negHits, verdict: verdictOf(score, domains, negHits) };
+  let score = Math.max(0, Math.min(100, Math.round(raw*0.75)));
+  const tgt = matchTarget(job.company);
+  if(tgt){
+    // une offre chez une entreprise ciblée est toujours remontée fort, pondérée par la priorité (★1-5)
+    const floor = 45 + tgt.priority*10; // ★5 → 95, ★1 → 55
+    score = Math.max(score, floor);
+  }
+  return { score, domains, hits, negHits, target: tgt, verdict: verdictOf(score, domains, negHits, tgt) };
 }
-function verdictOf(score, domains, neg){
+function verdictOf(score, domains, neg, tgt){
   const top = Object.entries(domains).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([d])=>LEX[d].label);
+  if(tgt) return `Entreprise ciblée ${"★".repeat(tgt.priority)} (${esc0(tgt.cat)}) — offre à traiter en priorité, même si le texte est générique.`;
   if(score>=75) return `Cible prioritaire — fort signal <b>${top.join(" + ")}</b>. À candidater vite.`;
   if(score>=55) return `Bon match <b>${top.join(" + ") || "profil ingénieur"}</b> — vérifier missions et durée.`;
   if(score>=35) return `Signal partiel (${top.join(", ")||"générique"}) — à lire si la zone convient.`;
   if(neg.length) return `Hors cible probable (${neg[0]}…).`;
   return `Peu de signaux dans la description.`;
 }
+function esc0(s){ return (s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 /* ============ ÉTAT & STORAGE (favoris / candidaté / rejeté / vues) ============ */
 const store = {
@@ -416,6 +1325,7 @@ const TABS = [
   {id:"sport",  label:"Sport / Outdoor", f:j=> j.domains.SPORT>0 && okDur(j)},
   {id:"essais", label:"Essais + Ergo", f:j=> (j.domains.ESSAIS>0||j.domains.ERGO>0) && okDur(j)},
   {id:"long",   label:"> 12 mois", f:j=> j.months!==null && j.months>12},
+  {id:"cibles", label:"🎯 Entreprises cibles", f:j=> !!j.target && okDur(j)},
   {id:"suivi",  label:"★ Suivi", f:j=> ["fav","applied"].includes(statuses[j.id])},
   {id:"rej",    label:"Rejetées", f:j=> statuses[j.id]==="rejected"},
 ];
@@ -427,7 +1337,8 @@ function filtered(){
   const days = document.getElementById("f-date").value;
   const minS = +document.getElementById("f-score").value;
   const q = strip(document.getElementById("f-q").value);
-  return jobs.filter(j=>{
+  const sort = document.getElementById("f-sort").value;
+  let rows = jobs.filter(j=>{
     if(!tab.f(j)) return false;
     if(view!=="rej" && view!=="suivi" && statuses[j.id]==="rejected") return false;
     if(dom && !(j.domains[dom]>0)) return false;
@@ -436,6 +1347,10 @@ function filtered(){
     if(q && !strip(j.title+" "+j.company+" "+j.address).includes(q)) return false;
     return true;
   });
+  if(sort==="match") rows.sort((a,b)=> (b.target?.priority||0)-(a.target?.priority||0) || b.score-a.score);
+  else if(sort==="date") rows.sort((a,b)=> (b.created?.getTime()||0)-(a.created?.getTime()||0));
+  else rows.sort((a,b)=> b.score-a.score || (b.created?.getTime()||0)-(a.created?.getTime()||0));
+  return rows;
 }
 const esc = s => (s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const scoreColor = s => s>=75?"var(--volt)": s>=55?"#9be07f": s>=35?"var(--amber)":"var(--faint)";
@@ -464,6 +1379,7 @@ function render(){
     const kws = [...new Set(j.hits.map(h=>h.kw))].slice(0,8).map(k=>`<span class="chip">${esc(k)}</span>`).join("");
     const negs = j.negHits.slice(0,2).map(k=>`<span class="chip neg">− ${esc(k)}</span>`).join("");
     const dur = j.months!==null?`<span class="chip ${j.months>12?'dur':''}">${j.months} mois</span>`:"";
+    const matchtag = j.target?`<div class="matchtag">🎯 ${esc(j.target.name)} <span class="stars">${"★".repeat(j.target.priority)}</span> — ${esc(j.target.cat)}</div>`:"";
     return `<article class="card status-${st||'none'}" data-id="${esc(j.id)}">
       <div class="gauge">
         <span class="sc" style="color:${scoreColor(j.score)}">${j.score}</span>
@@ -473,6 +1389,7 @@ function render(){
       <div>
         <h3>${j.url?`<a href="${esc(j.url)}" target="_blank" rel="noopener">${esc(j.title)}</a>`:esc(j.title)}</h3>
         <div class="meta"><span class="co">${esc(j.company)}</span><span>${esc(j.address)}</span><span>${rel(j.created)}</span><span>${esc(j.partner)}</span></div>
+        ${matchtag}
         <p class="verdict">${j.verdict}</p>
         <div class="chips">${doms}${dur}${kws}${negs}</div>
         ${j.description?`<button class="desc-toggle">▸ description analysée</button><div class="desc">${highlight(j)}</div>`:""}
@@ -487,6 +1404,7 @@ function render(){
       </div>
     </article>`;
   }).join("");
+  renderTargets();
 }
 function highlight(j){
   let html = esc(j.description.slice(0,4000));
@@ -497,12 +1415,101 @@ function highlight(j){
   return html;
 }
 
+/* ============ PANNEAU ENTREPRISES CIBLÉES ============ */
+function saveTargets(){ store.set("afb_targets", targets); }
+
+function renderTargets(){
+  document.getElementById("tgt-count").textContent = targets.length;
+  const wrap = document.getElementById("tgt-table");
+  const sorted = [...targets].sort((a,b)=> b.priority-a.priority || a.name.localeCompare(b.name));
+  wrap.innerHTML = sorted.map((t,idx)=>{
+    const i = targets.indexOf(t);
+    const nb = jobs.filter(j=> j.target && normCo(j.target.name)===normCo(t.name) && okDur(j)).length;
+    return `<div class="tgt-row ${nb?'matched':''}" data-i="${i}">
+      <span class="nm">${esc(t.name)}</span>
+      <span class="cat">${esc(t.cat||"")}</span>
+      <span class="stars-view">${"★".repeat(t.priority)}${"☆".repeat(5-t.priority)}</span>
+      <span class="stat-mini ${nb?'found':'none'}">${nb?`${nb} offre${nb>1?'s':''}`:'aucune offre'}</span>
+      <button class="del" title="Retirer">✕</button>
+    </div>`;
+  }).join("");
+
+  // entreprises ciblées sans AUCUNE offre trouvée dans le chargement actuel
+  const missingWrap = document.getElementById("tgt-missing");
+  if(view==="cibles"){
+    const withOffer = new Set(jobs.filter(j=>j.target).map(j=> normCo(j.target.name)));
+    const missing = [...targets].filter(t=> !withOffer.has(normCo(t.name))).sort((a,b)=>b.priority-a.priority);
+    missingWrap.innerHTML = missing.length ? `
+      <h3 style="margin:22px 0 4px;font-size:15px;color:var(--muted)">Entreprises ciblées sans offre actuellement (${missing.length}) — à contacter en candidature spontanée</h3>
+      <p class="hint" style="margin-bottom:10px">Aucune offre publiée trouvée pour ces entreprises dans ce chargement. Ça ne veut pas dire qu'elles ne recrutent pas — vise leur site carrière ou LinkedIn directement.</p>
+      <div class="chips">${missing.map(t=>`<span class="chip dom" title="${esc(t.cat)}">${esc(t.name)} ${"★".repeat(t.priority)}</span>`).join("")}</div>
+    ` : "";
+  } else {
+    missingWrap.innerHTML = "";
+  }
+}
+
+document.getElementById("tgt-stars-input").addEventListener("click",e=>{
+  const el = document.getElementById("tgt-stars-input");
+  const rect = el.getBoundingClientRect();
+  const v = Math.min(5, Math.max(1, Math.ceil((e.clientX-rect.left)/(rect.width/5))));
+  el.dataset.v = v;
+  el.innerHTML = "★".repeat(v) + "<span>"+"★".repeat(5-v)+"</span>";
+});
+document.getElementById("tgt-add").addEventListener("click",()=>{
+  const name = document.getElementById("tgt-name").value.trim();
+  const cat = document.getElementById("tgt-cat").value.trim();
+  const priority = +document.getElementById("tgt-stars-input").dataset.v || 4;
+  if(!name) return;
+  targets.push({name, cat, priority});
+  saveTargets();
+  document.getElementById("tgt-name").value = "";
+  document.getElementById("tgt-cat").value = "";
+  jobs.forEach(j=> Object.assign(j, analyze(j)));
+  renderTargets(); render();
+});
+document.getElementById("tgt-table").addEventListener("click",e=>{
+  const row = e.target.closest(".tgt-row"); if(!row) return;
+  if(e.target.classList.contains("del")){
+    targets.splice(+row.dataset.i,1);
+    saveTargets();
+    jobs.forEach(j=> Object.assign(j, analyze(j)));
+    renderTargets(); render();
+  }
+});
+document.getElementById("tgt-bulk-add").addEventListener("click",()=>{
+  const lines = document.getElementById("tgt-bulk").value.split("\n").map(l=>l.trim()).filter(Boolean);
+  for(const line of lines){
+    const [name,cat,pr] = line.split(";").map(s=>s?.trim());
+    if(!name) continue;
+    const priority = Math.min(5,Math.max(1, parseInt(pr)||4));
+    targets.push({name, cat:cat||"", priority});
+  }
+  saveTargets();
+  document.getElementById("tgt-bulk").value = "";
+  jobs.forEach(j=> Object.assign(j, analyze(j)));
+  renderTargets(); render();
+});
+document.getElementById("tgt-export").addEventListener("click",()=>{
+  const txt = targets.map(t=>`${t.name};${t.cat||""};${t.priority}`).join("\n");
+  navigator.clipboard?.writeText(txt);
+  const btn = document.getElementById("tgt-export"); const old = btn.textContent;
+  btn.textContent = "Copié !"; setTimeout(()=>btn.textContent=old, 1400);
+});
+document.getElementById("tgt-reset").addEventListener("click",()=>{
+  if(!confirm("Remplacer ta liste actuelle par la liste par défaut (162 entreprises) ? Tes ajouts/suppressions seront perdus.")) return;
+  targets = DEFAULT_TARGETS.map(t=>({...t}));
+  saveTargets();
+  jobs.forEach(j=> Object.assign(j, analyze(j)));
+  renderTargets(); render();
+});
+
 /* ============ CSV ============ */
 function exportCsv(){
   const rows = filtered();
-  const head = ["score","statut","poste","entreprise","adresse","duree_mois","domaines","mots_cles","date","partenaire","lien"];
+  const head = ["score","entreprise_ciblee","priorite","statut","poste","entreprise","adresse","duree_mois","domaines","mots_cles","date","partenaire","lien"];
   const csv = [head.join(";")].concat(rows.map(j=>[
-    j.score, statuses[j.id]||"", j.title, j.company, j.address, j.months??"",
+    j.score, j.target?j.target.name:"", j.target?j.target.priority:"", statuses[j.id]||"", j.title, j.company, j.address, j.months??"",
     Object.keys(j.domains).join("+"), [...new Set(j.hits.map(h=>h.kw))].slice(0,10).join("|"),
     j.created?j.created.toISOString().slice(0,10):"", j.partner, j.url
   ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";"))).join("\n");
@@ -522,7 +1529,7 @@ document.getElementById("locchips").addEventListener("click",e=>{
 document.getElementById("tabs").addEventListener("click",e=>{
   const b = e.target.closest("button"); if(!b) return; view = b.dataset.t; render();
 });
-for(const id of ["f-domain","f-date","f-q"]) document.getElementById(id).addEventListener("input",render);
+for(const id of ["f-domain","f-date","f-q","f-sort"]) document.getElementById(id).addEventListener("input",render);
 document.getElementById("f-score").addEventListener("input",e=>{
   document.getElementById("f-score-out").textContent = e.target.value; render();
 });
@@ -540,6 +1547,7 @@ document.getElementById("list").addEventListener("click",e=>{
 document.getElementById("btn-load").addEventListener("click",loadAll);
 document.getElementById("btn-csv").addEventListener("click",exportCsv);
 
+renderTargets(); // affiche la liste d'entreprises même avant le premier chargement
 loadAll(); // chargement auto au démarrage
 </script>
 </body>
