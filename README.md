@@ -38,6 +38,21 @@ alternance-finder/
 - Statuts ★ favori / ✓ candidaté / ✕ rejeté persistés en localStorage,
   badge NEW sur les offres jamais vues, export CSV de la vue filtrée.
 
+## Entreprises ciblées (nouveau)
+
+Panneau "Entreprises ciblées" (sous les paramètres de recherche) : liste éditable de marques
+sport (préchargée avec 162 entreprises — montagne, vélo, nautisme, protection, textile
+technique, laboratoires d'essais…), chacune avec une note ★1–5 d'importance.
+
+- Toute offre dont l'entreprise matche la liste (comparaison tolérante : accents, SAS/SARL,
+  variantes de nom ignorés) a son score automatiquement remonté à `45 + priorité×10`
+  (★5 → 95), même si le texte de l'offre est pauvre en mots-clés.
+- Nouvel onglet **🎯 Entreprises cibles** : ne montre que les offres chez ces entreprises,
+  et liste en dessous celles **sans offre actuelle** — donc à viser en candidature spontanée.
+- Tri "Correspondance entreprise cible" dans la barre d'outils.
+- Ajout à l'unité, import en masse (`Nom;Catégorie;Priorité` une ligne par entreprise),
+  export (copie presse-papier), reset à la liste par défaut. Tout est stocké en localStorage.
+
 ## Ajuster le ciblage
 
 Tout est dans `index.html` :
@@ -45,4 +60,3 @@ Tout est dans `index.html` :
 - `NEG` : mots-clés éliminatoires.
 - `LOCATIONS` : villes proposées (lat/lon).
 - Seuil "Recommandées" : `j.score>=55` dans `TABS`.
-  
