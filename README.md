@@ -38,6 +38,17 @@ alternance-finder/
 - Statuts ★ favori / ✓ candidaté / ✕ rejeté persistés en localStorage,
   badge NEW sur les offres jamais vues, export CSV de la vue filtrée.
 
+## Recherche large (par défaut) au lieu de codes ROME
+
+Après avoir constaté qu'une offre réelle (Decathlon, ingénieur composants footwear) n'était
+récupérable sous aucun des 5 codes ROME essayés successivement, le filtrage par ROME côté API
+est devenu **optionnel et désactivé par défaut** (case "Recherche large" dans les paramètres).
+Impossible de deviner à l'avance tous les codes ROME que les entreprises utilisent pour des
+métiers hybrides (textile/mode/ingénierie) — la recherche large récupère tous les métiers pour
+chaque zone géographique active, et c'est le moteur de score (lexique + entreprises ciblées) qui
+fait le tri ensuite. Décoche la case si tu veux explicitement restreindre à quelques métiers
+(recherche plus rapide côté volume de données, mais tu reprends le risque de rater des offres).
+
 ## Couverture élargie (suite à un cas manqué : Decathlon Offer & Design)
 
 Trois corrections après qu'une offre réelle (ingénieur composants footwear, Decathlon Offer &
