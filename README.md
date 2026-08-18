@@ -38,20 +38,31 @@ alternance-finder/
 - Statuts ★ favori / ✓ candidaté / ✕ rejeté persistés en localStorage,
   badge NEW sur les offres jamais vues, export CSV de la vue filtrée.
 
-## Entreprises ciblées (nouveau)
+## Entreprises ciblées
 
 Panneau "Entreprises ciblées" (sous les paramètres de recherche) : liste éditable de marques
 sport (préchargée avec 162 entreprises — montagne, vélo, nautisme, protection, textile
 technique, laboratoires d'essais…), chacune avec une note ★1–5 d'importance.
 
-- Toute offre dont l'entreprise matche la liste (comparaison tolérante : accents, SAS/SARL,
-  variantes de nom ignorés) a son score automatiquement remonté à `45 + priorité×10`
-  (★5 → 95), même si le texte de l'offre est pauvre en mots-clés.
+- **Case à cocher par entreprise** : décocher désactive la correspondance sans supprimer
+  l'entreprise de la liste (elle reste visible, réactivable en un clic). Boutons "Tout cocher"
+  / "Tout décocher" pour aller vite. Le bouton ✕ supprime définitivement.
+- Toute offre dont l'entreprise (cochée) matche la liste (comparaison tolérante : accents,
+  SAS/SARL, variantes de nom ignorés) a son score automatiquement remonté à
+  `45 + priorité×10` (★5 → 95), même si le texte de l'offre est pauvre en mots-clés.
 - Nouvel onglet **🎯 Entreprises cibles** : ne montre que les offres chez ces entreprises,
   et liste en dessous celles **sans offre actuelle** — donc à viser en candidature spontanée.
 - Tri "Correspondance entreprise cible" dans la barre d'outils.
 - Ajout à l'unité, import en masse (`Nom;Catégorie;Priorité` une ligne par entreprise),
   export (copie presse-papier), reset à la liste par défaut. Tout est stocké en localStorage.
+
+## Mots-clés personnalisés
+
+Panneau "Mots-clés personnalisés" : ajoute n'importe quel mot ou expression (ex. `conception`,
+`prototypage`, `cahier des charges`) avec un poids (1–40, défaut 12). Trouvé dans le titre =
+poids ×3 automatiquement, comme pour les mots-clés intégrés. Chaque mot est cochable (activer/
+désactiver sans le supprimer) et contribue au score global de la même façon que les lexiques
+`LEX` du moteur. Utile pour affiner sans toucher au code.
 
 ## Ajuster le ciblage
 
