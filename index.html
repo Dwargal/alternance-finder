@@ -121,6 +121,10 @@ details.cfg[open] summary::before{transform:rotate(90deg)}
 .tgt-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--volt);cursor:pointer}
 .tgt-row.matched{border-color:var(--volt-dim)}
 .tgt-row .nm{font-weight:700;font-size:13.5px}
+.tgt-row a.nm{color:var(--ink);text-decoration:none}
+.tgt-row a.nm:hover{color:var(--volt);text-decoration:underline}
+.chips a.chip{text-decoration:none;cursor:pointer}
+.chips a.chip:hover{background:rgba(200,243,29,.12)}
 .tgt-row .cat{color:var(--muted);font-size:12px}
 .tgt-row .stars-view{color:var(--volt);font-size:12px;letter-spacing:1px}
 .tgt-row .stat-mini{font-family:var(--mono);font-size:11px}
@@ -384,9 +388,11 @@ const K = (s,w)=>[new RegExp("\\b(?:"+s+")","i"), w];
 const LEX = {
   SPORT: { label:"Sport / Outdoor", color:"#c8f31d", kws:[
     K("equipements? sportifs?|articles? de sport|materiels? (?:de )?sport|industrie du sport",16),
-    K("equipements?\\b",4),
     K("sports?\\b|sportifs?|sportives?",8),
-    K("outdoor|montagne|alpinisme|escalade|randonnee|trek|trail\\b|glisse",10),
+    K("montagne|alpinisme|escalade|randonnee|trek|trail\\b|glisse",10),
+    // "outdoor" seul est trop ambigu (ex: "communication outdoor" = affichage publicitaire, sans rapport
+    // avec le sport) — on n'accepte que des expressions composées qui signifient vraiment sport outdoor.
+    K("sports? outdoor|outdoor sports?|activites? outdoor|equipements? outdoor|vetements? outdoor|produits? outdoor|marque\\w* outdoor|industrie (?:de l'|du )?outdoor|marche (?:de l'|du )?outdoor|univers outdoor|outdoor et montagne|outdoor/montagne",10),
     K("skis?\\b|snowboard|freeride|fixations?\\b",12),
     K("velos?\\b|cycles?\\b|cyclisme|vtt|gravel|e-?bike|vae\\b",11),
     K("running|chaussures? de (?:sport|course|running)|sneakers?",10),
@@ -487,7 +493,6 @@ const EXCLUDE_FAMILIES = [
 // malus additionnels (jamais éliminatoires seuls) — signaux faibles de non-pertinence
 const NEG = [
   K("encaissement|mise en rayon|tenue de caisse|fidelisation client|ticket de caisse",18),
-  K("permis b (?:exige|obligatoire|requis)|port de charges|station debout",8),
 ];
 
 /* Un match dans le titre = famille exclue. Renvoie la famille bloquante ou null. */
@@ -1347,9 +1352,19 @@ rebuildCustomExcl();
 
 // normalise un nom d'entreprise pour comparaison (retire termes juridiques, ponctuation)
 function normCo(s){
+  // NB : on garde les espaces (remplace la ponctuation par des espaces, sans tout coller) —
+  // indispensable pour une comparaison par MOTS ENTIERS plus bas, plutôt que par sous-chaîne.
   return strip(s||"")
     .replace(/\b(sas|sarl|sa|sasu|eurl|groupe|group|france|europe|international|sport|sports)\b/g,"")
-    .replace(/[^a-z0-9]/g,"");
+    .replace(/[^a-z0-9]+/g," ")
+    .trim().replace(/\s+/g," ");
+}
+// vrai si "needle" apparaît dans "haystack" comme mot(s) entier(s), jamais comme simple fragment
+// d'un autre mot (ex: "eider" ne doit jamais matcher à l'intérieur de "schneider").
+function wordMatch(haystack, needle){
+  if(!needle || needle.length<3) return false;
+  try{ return new RegExp("\\b"+escapeRe(needle)+"\\b").test(haystack); }
+  catch(e){ return false; }
 }
 function matchTarget(companyName){
   const nc = normCo(companyName);
@@ -1359,7 +1374,7 @@ function matchTarget(companyName){
     if(t.enabled===false) continue;
     const nt = normCo(t.name);
     if(!nt || nt.length<3) continue;
-    if(nc===nt || nc.includes(nt) || nt.includes(nc)){
+    if(nc===nt || wordMatch(nc, nt) || wordMatch(nt, nc)){
       if(!best || t.priority>best.priority) best = t;
     }
   }
@@ -1370,6 +1385,10 @@ function analyze(job){
   const title = strip(job.title);
   const body  = strip([job.description, job.companyDesc, job.company].filter(Boolean).join("\n"));
   const domains = {}; const hits = []; let raw = 0;
+  // Un domaine n'est retenu (badge, onglet, filtre) que s'il atteint ce seuil. Sans ça, un seul mot
+  // faible et générique suffirait à étiqueter une offre dans un domaine qui n'a rien à voir
+  // (ex: "installation des équipements électriques" chez un avionneur → étiqueté "Sport").
+  const DOMAIN_MIN = 10;
   for(const [dom,def] of Object.entries(LEX)){
     let dscore = 0;
     for(const [re,w] of def.kws){
@@ -1377,7 +1396,7 @@ function analyze(job){
       if(mT){ dscore += w*3; hits.push({kw:mT[0],dom,inTitle:true}); }
       else if(mB){ dscore += w; hits.push({kw:mB[0],dom,inTitle:false}); }
     }
-    if(dscore>0) domains[dom]=dscore;
+    if(dscore>=DOMAIN_MIN) domains[dom]=dscore;
     raw += Math.min(dscore, 60); // plafond par domaine → évite qu'un seul lexique sature
   }
   let penalty = 0; const negHits=[];
@@ -1402,7 +1421,7 @@ function analyze(job){
     if(mT){ customScore += weight*3; hits.push({kw:mT[0],dom:"CUSTOM",inTitle:true}); }
     else if(mB){ customScore += weight; hits.push({kw:mB[0],dom:"CUSTOM",inTitle:false}); }
   }
-  if(customScore>0) domains.CUSTOM = customScore;
+  if(customScore>=DOMAIN_MIN) domains.CUSTOM = customScore;
   raw += Math.min(customScore, 60);
   // combos : le cœur du profil = sport × (essais | ergo | produit)
   if(domains.SPORT && (domains.ESSAIS||domains.ERGO||domains.PRODUIT)) raw += 22;
@@ -1581,7 +1600,7 @@ function render(){
     const st = statuses[j.id]||"";
     const doms = Object.entries(j.domains).sort((a,b)=>b[1]-a[1])
       .map(([d])=>`<span class="chip dom" style="border-color:${LEX[d].color};color:${LEX[d].color}">${LEX[d].label}</span>`).join("");
-    const kws = [...new Set(j.hits.map(h=>h.kw))].slice(0,8).map(k=>`<span class="chip">${esc(k)}</span>`).join("");
+    const kws = [...new Set(j.hits.filter(h=>j.domains[h.dom]!==undefined).map(h=>h.kw))].slice(0,8).map(k=>`<span class="chip">${esc(k)}</span>`).join("");
     const negs = j.negHits.slice(0,2).map(k=>`<span class="chip neg">− ${esc(k)}</span>`).join("");
     const dur = j.months!==null?`<span class="chip ${j.months>12?'dur':''}">${j.months} mois</span>`:"";
     const matchtag = j.target?`<div class="matchtag">🎯 ${esc(j.target.name)} <span class="stars">${"★".repeat(j.target.priority)}</span> — ${esc(j.target.cat)}</div>`:"";
@@ -1620,6 +1639,10 @@ function highlight(j){
   return html;
 }
 
+function companySearchUrl(name){
+  return "https://www.google.com/search?q=" + encodeURIComponent(`"${name}" alternance recrutement carrières`);
+}
+
 /* ============ PANNEAU ENTREPRISES CIBLÉES ============ */
 function saveTargets(){ store.set("afb_targets", targets); }
 function recompute(){ jobs.forEach(j=> Object.assign(j, analyze(j))); }
@@ -1634,7 +1657,7 @@ function renderTargets(){
     const on = t.enabled!==false;
     return `<div class="tgt-row ${on?'':'off'}" data-i="${i}">
       <input type="checkbox" class="tgt-on" ${on?'checked':''} title="Activer/désactiver pour le scoring">
-      <span class="nm">${esc(t.name)}</span>
+      <a class="nm" href="${companySearchUrl(t.name)}" target="_blank" rel="noopener" title="Chercher les offres et la page carrière de ${esc(t.name)}">${esc(t.name)} ↗</a>
       <span class="cat">${esc(t.cat||"")}</span>
       <span class="stars-view">${"★".repeat(t.priority)}${"☆".repeat(5-t.priority)}</span>
       <span class="stat-mini ${nb?'found':'none'}">${nb?`${nb} offre${nb>1?'s':''}`:'aucune offre'}</span>
@@ -1649,8 +1672,8 @@ function renderTargets(){
     const missing = targets.filter(t=> t.enabled!==false && !withOffer.has(normCo(t.name))).sort((a,b)=>b.priority-a.priority);
     missingWrap.innerHTML = missing.length ? `
       <h3 style="margin:22px 0 4px;font-size:15px;color:var(--muted)">Entreprises ciblées sans offre actuellement (${missing.length}) — à contacter en candidature spontanée</h3>
-      <p class="hint" style="margin-bottom:10px">Aucune offre publiée trouvée pour ces entreprises dans ce chargement. Ça ne veut pas dire qu'elles ne recrutent pas — vise leur site carrière ou LinkedIn directement.</p>
-      <div class="chips">${missing.map(t=>`<span class="chip dom" title="${esc(t.cat)}">${esc(t.name)} ${"★".repeat(t.priority)}</span>`).join("")}</div>
+      <p class="hint" style="margin-bottom:10px">Aucune offre publiée trouvée pour ces entreprises dans ce chargement. Clique un nom pour chercher directement leur page carrière / LinkedIn.</p>
+      <div class="chips">${missing.map(t=>`<a class="chip dom" href="${companySearchUrl(t.name)}" target="_blank" rel="noopener" title="${esc(t.cat)}">${esc(t.name)} ${"★".repeat(t.priority)} ↗</a>`).join("")}</div>
     ` : "";
   } else {
     missingWrap.innerHTML = "";
