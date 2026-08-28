@@ -209,6 +209,15 @@ footer a{color:var(--muted)}
       </select>
     </div>
     <div style="grid-column:1/-1">
+      <label>Type de contrat recherché</label>
+      <div class="locchips" id="contractchips">
+        <button data-c="alternance" class="on">Alternance (La bonne alternance)</button>
+        <button data-c="CDD">CDD (France Travail)</button>
+        <button data-c="CDI">CDI (France Travail)</button>
+        <button data-c="MIS">Intérim / mission</button>
+      </div>
+    </div>
+    <div style="grid-column:1/-1">
       <label>Zones interrogées (une requête par zone active)</label>
       <div class="locchips" id="locchips"></div>
     </div>
@@ -221,6 +230,45 @@ footer a{color:var(--muted)}
       une offre un peu ancienne publiée loin de tes zones actives — active plus de villes ci-dessus (ou active
       toutes les zones) pour une couverture nationale fiable.
     </p>
+  </div>
+</details>
+
+<details class="cfg" id="links-panel">
+  <summary>🔎 RECHERCHES CDD / EMPLOI JUNIOR SUR LES AUTRES SITES — liens prêts à cliquer</summary>
+  <div class="cfg-body" style="grid-template-columns:1fr">
+    <p class="hint">
+      Beaucoup de CDD juniors ne passent ni par La bonne alternance ni par France Travail (les
+      marques sport publient souvent en direct sur LinkedIn, Welcome to the Jungle ou leur site
+      carrière). Ces liens ouvrent une recherche déjà remplie avec ton profil sur chaque plateforme.
+      Choisis un métier et une zone, les liens se mettent à jour automatiquement.
+    </p>
+    <div class="tgt-toolbar">
+      <select id="lnk-role" style="flex:1;min-width:200px">
+        <option value="ingénieur essais terrain sport">Ingénieur essais terrain sport</option>
+        <option value="ingénieur produit sport">Ingénieur produit / développement produit sport</option>
+        <option value="ergonome biomécanique sport">Ergonome / biomécanique du sport</option>
+        <option value="ingénieur test validation produit">Ingénieur test &amp; validation produit</option>
+        <option value="ingénieur matériaux composites sport">Ingénieur matériaux / composites sport</option>
+        <option value="chef de projet produit outdoor">Chef de projet produit outdoor</option>
+        <option value="ingénieur éco-conception produit">Ingénieur éco-conception produit</option>
+        <option value="ingénieur R&D équipement sportif">Ingénieur R&amp;D équipement sportif</option>
+      </select>
+      <input type="text" id="lnk-where" placeholder="Ville / région (ex: Annecy)" value="Annecy" style="flex:1;min-width:150px">
+      <select id="lnk-contract">
+        <option value="CDD">CDD</option>
+        <option value="CDI">CDI</option>
+        <option value="">Tous contrats</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);cursor:pointer">
+        <input type="checkbox" id="lnk-junior" checked style="width:16px;height:16px;accent-color:var(--volt);cursor:pointer"> junior / débutant
+      </label>
+    </div>
+    <div id="lnk-list" class="chips" style="margin-top:4px"></div>
+    <div class="tgt-import">
+      <div class="h">Recherche ciblée sur tes entreprises prioritaires (★4–5)</div>
+      <p class="hint" style="margin:0 0 8px">Un lien par entreprise, qui cherche directement ses offres actuelles sur Google (site carrière + LinkedIn + jobboards).</p>
+      <div id="lnk-companies" class="chips"></div>
+    </div>
   </div>
 </details>
 
@@ -361,25 +409,26 @@ const API_PROXY  = "/api/lba"; // fonction serverless Vercel (recommandé) — f
 // ⚠️ Idéalement, mets le token dans la variable d'env Vercel LBA_API_TOKEN et laisse cette constante vide.
 const FALLBACK_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJfaWQiOiI2YTg0MGVhNmNkZjA0YmU2MThmNWVlODMiLCJhcGlfa2V5IjoiTElVL3RRUlZDTmZkZDRqTTNRVzA4c096NzhRZFphTGVNSkg2bUZaaXdmYz0iLCJvcmdhbmlzYXRpb24iOm51bGwsImVtYWlsIjoiYnJpYWMuZ3JhbGwwM0BnbWFpbC5jb20iLCJpc3MiOiJhcGkiLCJpYXQiOjE3ODcwMzk0MDUsImV4cCI6MTgxODU3NTQwNX0.RvJWdX5QZSTncVK2jPOS9Fp23a_LQGqRStetIxfN-nE";
 
+// insee = code commune INSEE, requis par l'API France Travail (qui ne prend pas lat/lon)
 const LOCATIONS = [
   {name:"France entière", nogeo:true, on:true},
-  {name:"Annecy",      lat:45.899, lon:6.129},
-  {name:"Grenoble",    lat:45.188, lon:5.724, on:true},
-  {name:"Chambéry",    lat:45.564, lon:5.918},
-  {name:"Lyon",        lat:45.764, lon:4.835, on:true},
-  {name:"Clermont-Fd", lat:45.777, lon:3.087},
-  {name:"Saint-Étienne",lat:45.439,lon:4.387},
-  {name:"Paris",       lat:48.857, lon:2.352, on:true},
-  {name:"Montpellier", lat:43.611, lon:3.877},
-  {name:"Toulouse",    lat:43.604, lon:1.444, on:true},
-  {name:"Bordeaux",    lat:44.838, lon:-0.579, on:true},
-  {name:"Pau",         lat:43.296, lon:-0.370},
-  {name:"Nantes",      lat:47.218, lon:-1.554, on:true},
-  {name:"Rennes",      lat:48.117, lon:-1.678},
-  {name:"Lille",       lat:50.629, lon:3.057, on:true}, // proche Wattrelos, campus Decathlon
-  {name:"Strasbourg",  lat:48.573, lon:7.752},
-  {name:"Marseille",   lat:43.297, lon:5.370, on:true},
-  {name:"Nice",        lat:43.710, lon:7.262},
+  {name:"Annecy",      lat:45.899, lon:6.129,  insee:"74010"},
+  {name:"Grenoble",    lat:45.188, lon:5.724,  insee:"38185", on:true},
+  {name:"Chambéry",    lat:45.564, lon:5.918,  insee:"73065"},
+  {name:"Lyon",        lat:45.764, lon:4.835,  insee:"69123", on:true},
+  {name:"Clermont-Fd", lat:45.777, lon:3.087,  insee:"63113"},
+  {name:"Saint-Étienne",lat:45.439,lon:4.387,  insee:"42218"},
+  {name:"Paris",       lat:48.857, lon:2.352,  insee:"75056", on:true},
+  {name:"Montpellier", lat:43.611, lon:3.877,  insee:"34172"},
+  {name:"Toulouse",    lat:43.604, lon:1.444,  insee:"31555", on:true},
+  {name:"Bordeaux",    lat:44.838, lon:-0.579, insee:"33063", on:true},
+  {name:"Pau",         lat:43.296, lon:-0.370, insee:"64445"},
+  {name:"Nantes",      lat:47.218, lon:-1.554, insee:"44109", on:true},
+  {name:"Rennes",      lat:48.117, lon:-1.678, insee:"35238"},
+  {name:"Lille",       lat:50.629, lon:3.057,  insee:"59350", on:true}, // proche Wattrelos, campus Decathlon
+  {name:"Strasbourg",  lat:48.573, lon:7.752,  insee:"67482"},
+  {name:"Marseille",   lat:43.297, lon:5.370,  insee:"13055", on:true},
+  {name:"Nice",        lat:43.710, lon:7.262,  insee:"06088"},
 ];
 
 /* ============ MOTEUR D'ANALYSE (lexiques pondérés) ============ */
@@ -518,6 +567,10 @@ let statuses = store.get("afb_status",{});   // id -> fav|applied|rejected
 let seenIds  = new Set(store.get("afb_seen",[]));
 let jobs = [];       // offres normalisées + analyse
 let view = "reco";   // onglet actif
+
+/* Synchro multi-appareils abandonnée (nécessitait une base Redis payante) — stub inoffensif
+   pour ne pas avoir à retoucher chaque endroit qui l'appelait. */
+function syncPushDebounced(){}
 
 /* ============ ENTREPRISES CIBLÉES (watchlist) ============ */
 const DEFAULT_TARGETS = [
@@ -1503,6 +1556,40 @@ function normalize(j){
     partner: j?.identifier?.partner_label || "",
   };
 }
+/* Normalise une offre France Travail vers le même format interne que La bonne alternance,
+   pour que le moteur de score (lexique, entreprises ciblées, exclusions) s'applique à l'identique. */
+function normalizeFT(o){
+  const loc = o?.lieuTravail || {};
+  const months = (()=>{
+    // FT ne donne pas une durée en mois structurée ; on l'extrait du libellé quand c'est possible
+    const t = (o?.typeContratLibelle||"") + " " + (o?.description||"").slice(0,400);
+    const m = t.match(/(\d{1,2})\s*mois/i);
+    return m ? parseInt(m[1]) : null;
+  })();
+  return {
+    id: "ft:" + (o?.id || o?.intitule),
+    title: o?.intitule || "(sans titre)",
+    description: o?.description || "",
+    company: o?.entreprise?.nom || "—",
+    companyDesc: o?.entreprise?.description || "",
+    city: loc?.libelle || "",
+    address: loc?.libelle || "",
+    url: o?.origineOffre?.urlOrigine || "",
+    romes: o?.romeCode ? [o.romeCode] : [],
+    months,
+    created: o?.dateCreation ? new Date(o.dateCreation) : null,
+    partner: "France Travail — " + (o?.typeContratLibelle || o?.typeContrat || ""),
+    contract: o?.typeContrat || "",
+  };
+}
+async function callFT(params){
+  const qs = new URLSearchParams(params).toString();
+  const r = await fetch(`/api/ft?${qs}`);
+  if(r.status===503) throw new Error("FT_NOT_CONFIGURED");
+  if(!r.ok) throw new Error("FT " + r.status);
+  return r.json();
+}
+
 async function loadAll(){
   const btn = document.getElementById("btn-load"); btn.disabled = true;
   const prog = document.getElementById("progress");
@@ -1511,25 +1598,63 @@ async function loadAll(){
   const radius = document.getElementById("radius").value || 60;
   const dip = document.getElementById("diploma").value;
   const zones = LOCATIONS.filter(l=>l.on);
-  const map = new Map(); let errs = 0;
-  for(let i=0;i<zones.length;i++){
-    const z = zones[i];
-    prog.textContent = `Requête ${i+1}/${zones.length} — ${z.name}${romesOff?' (tous métiers)':''}…`;
-    const p = {};
-    if(!romesOff && romes) p.romes = romes;
-    if(!z.nogeo){ p.latitude=z.lat; p.longitude=z.lon; p.radius=radius; }
-    if(dip) p.target_diploma_level = dip;
-    try{
-      const data = await callApi(p);
-      for(const j of (data.jobs||[])){
-        const n = normalize(j);
-        if(!map.has(n.id)) map.set(n.id, n);
-      }
-    }catch(e){ errs++; prog.innerHTML = `<span class="err">Erreur ${z.name} : ${e.message}</span>`; await new Promise(r=>setTimeout(r,600)); }
+  const contracts = [...document.querySelectorAll("#contractchips button.on")].map(b=>b.dataset.c);
+  const map = new Map(); let errs = 0; let ftUnavailable = false;
+
+  // --- 1) Alternance via La bonne alternance ---
+  if(contracts.includes("alternance")){
+    for(let i=0;i<zones.length;i++){
+      const z = zones[i];
+      prog.textContent = `Alternance ${i+1}/${zones.length} — ${z.name}${romesOff?' (tous métiers)':''}…`;
+      const p = {};
+      if(!romesOff && romes) p.romes = romes;
+      if(!z.nogeo){ p.latitude=z.lat; p.longitude=z.lon; p.radius=radius; }
+      if(dip) p.target_diploma_level = dip;
+      try{
+        const data = await callApi(p);
+        for(const j of (data.jobs||[])){
+          const n = normalize(j);
+          if(!map.has(n.id)) map.set(n.id, n);
+        }
+      }catch(e){ errs++; prog.innerHTML = `<span class="err">Erreur ${z.name} : ${e.message}</span>`; await new Promise(r=>setTimeout(r,600)); }
+    }
   }
+
+  // --- 2) CDD / CDI / intérim via France Travail ---
+  const ftTypes = contracts.filter(c=>c!=="alternance");
+  if(ftTypes.length){
+    const ftZones = zones.filter(z=>!z.nogeo);
+    const zoneList = ftZones.length ? ftZones : [{name:"France entière", nogeo:true}];
+    outer:
+    for(const type of ftTypes){
+      for(let i=0;i<zoneList.length;i++){
+        const z = zoneList[i];
+        prog.textContent = `${type} — ${z.name} (${i+1}/${zoneList.length})…`;
+        const p = { typeContrat:type, experience:"1", range:"0-99" };
+        if(!romesOff && romes) p.codeROME = romes;
+        if(!z.nogeo){ p.commune = z.insee || ""; p.distance = radius; }
+        if(!p.commune) delete p.commune;
+        // sans commune on cible large : mots-clés du profil pour éviter de ramener tout le marché
+        if(!p.commune) p.motsCles = "ingénieur produit essais conception";
+        try{
+          const data = await callFT(p);
+          for(const o of (data.resultats||[])){
+            const n = normalizeFT(o);
+            if(!map.has(n.id)) map.set(n.id, n);
+          }
+        }catch(e){
+          if(e.message==="FT_NOT_CONFIGURED"){ ftUnavailable = true; break outer; }
+          errs++;
+        }
+      }
+    }
+  }
+
   jobs = [...map.values()].map(n => Object.assign(n, analyze(n)));
   jobs.sort((a,b)=> b.score-a.score || (b.created?.getTime()||0)-(a.created?.getTime()||0));
-  prog.textContent = `${jobs.length} offres uniques analysées (${zones.length} zones${romesOff?', tous métiers':''}${errs?`, ${errs} erreurs`:""}).`;
+  let msg = `${jobs.length} offres uniques analysées (${zones.length} zones${romesOff?', tous métiers':''}${errs?`, ${errs} erreurs`:""}).`;
+  if(ftUnavailable) msg += ` ⚠️ CDD/CDI indisponibles : API France Travail non configurée (voir README) — utilise le panneau « Recherches CDD » ci-dessus en attendant.`;
+  prog.textContent = msg;
   btn.disabled = false;
   render();
   // marquer comme vues APRÈS rendu (le badge NEW reste pour cette session)
@@ -1544,6 +1669,7 @@ const TABS = [
   {id:"sport",  label:"Sport / Outdoor", f:j=> j.domains.SPORT>0 && okDur(j) && !j.excluded},
   {id:"essais", label:"Essais + Ergo", f:j=> (j.domains.ESSAIS>0||j.domains.ERGO>0) && okDur(j) && !j.excluded},
   {id:"long",   label:"> 12 mois", f:j=> j.months!==null && j.months>12 && !j.excluded && !j.noSignal},
+  {id:"cdd",    label:"CDD / CDI", f:j=> !!j.contract && !j.excluded && !j.noSignal},
   {id:"cibles", label:"🎯 Entreprises cibles", f:j=> !!j.target && okDur(j)},
   {id:"suivi",  label:"★ Suivi", f:j=> ["fav","applied"].includes(statuses[j.id])},
   {id:"ecartees",label:"🚫 Écartées", f:j=> j.excluded || j.noSignal},
@@ -1593,7 +1719,7 @@ function render(){
   const list = document.getElementById("list");
   if(!rows.length){
     list.innerHTML = `<div class="empty">Aucune offre dans cette vue — élargis les zones, baisse le score min, ou clique « Actualiser les offres ».</div>`;
-    renderTargets(); renderKw(); renderExcl();
+    renderTargets(); renderKw(); renderExcl(); if(typeof renderLinks==="function") renderLinks();
     return;
   }
   list.innerHTML = rows.map(j=>{
@@ -1628,7 +1754,7 @@ function render(){
       </div>
     </article>`;
   }).join("");
-  renderTargets(); renderKw(); renderExcl();
+  renderTargets(); renderKw(); renderExcl(); if(typeof renderLinks==="function") renderLinks();
 }
 function highlight(j){
   let html = esc(j.description.slice(0,4000));
@@ -1644,7 +1770,7 @@ function companySearchUrl(name){
 }
 
 /* ============ PANNEAU ENTREPRISES CIBLÉES ============ */
-function saveTargets(){ store.set("afb_targets", targets); }
+function saveTargets(){ store.set("afb_targets", targets); syncPushDebounced(); }
 function recompute(){ jobs.forEach(j=> Object.assign(j, analyze(j))); }
 
 function renderTargets(){
@@ -1745,6 +1871,7 @@ function saveExcl(){
   const map = {}; EXCLUDE_FAMILIES.forEach(f=> map[f.id] = f.on!==false);
   store.set("afb_excl", map);
   store.set("afb_customexcl", customExcl);
+  syncPushDebounced();
 }
 function renderExcl(){
   document.getElementById("excl-count").textContent =
@@ -1822,7 +1949,7 @@ function renderLexicon(){
 }
 
 /* ============ PANNEAU MOTS-CLÉS PERSONNALISÉS ============ */
-function saveKw(){ store.set("afb_customkw", customKw); }
+function saveKw(){ store.set("afb_customkw", customKw); syncPushDebounced(); }
 function renderKw(){
   document.getElementById("kw-count").textContent = customKw.filter(k=>k.enabled!==false).length + "/" + customKw.length;
   const wrap = document.getElementById("kw-table");
@@ -1856,6 +1983,56 @@ document.getElementById("kw-table").addEventListener("click",e=>{
   if(e.target.classList.contains("del")){ customKw.splice(i,1); saveKw(); recompute(); renderKw(); renderLexicon(); render(); }
   if(e.target.classList.contains("kw-on")){ customKw[i].enabled = e.target.checked; saveKw(); recompute(); renderKw(); renderLexicon(); render(); }
 });
+
+/* ============ LIENS DE RECHERCHE EXTERNES (CDD / emploi junior) ============
+   Aucune API, aucune clé : on construit simplement les URLs de recherche de chaque plateforme.
+   C'est le complément indispensable aux API, car beaucoup de PME sport publient uniquement
+   sur LinkedIn / WTTJ / leur propre site carrière. */
+const JOB_SITES = [
+  { name:"Google Jobs", build:(q,w,c,j)=>
+      `https://www.google.com/search?q=${encodeURIComponent(`${q} ${c} ${j} ${w}`.trim())}&ibp=htl;jobs` },
+  { name:"France Travail", build:(q,w,c,j)=>
+      `https://candidat.francetravail.fr/offres/recherche?motsCles=${encodeURIComponent(q)}&lieux=${encodeURIComponent(w)}${c?`&typeContrat=${c}`:""}${j?"&experience=1":""}` },
+  { name:"Indeed", build:(q,w,c,j)=>
+      `https://fr.indeed.com/jobs?q=${encodeURIComponent(`${q} ${c} ${j}`.trim())}&l=${encodeURIComponent(w)}` },
+  { name:"LinkedIn", build:(q,w,c,j)=>
+      `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${q} ${c}`.trim())}&location=${encodeURIComponent(w||"France")}${j?"&f_E=1%2C2":""}` },
+  { name:"Welcome to the Jungle", build:(q,w,c,j)=>
+      `https://www.welcometothejungle.com/fr/jobs?query=${encodeURIComponent(q)}&aroundQuery=${encodeURIComponent(w)}${c?`&refinementList%5Bcontract_type%5D%5B%5D=${c.toLowerCase()==="cdd"?"temporary":"full_time"}`:""}` },
+  { name:"APEC (cadres)", build:(q,w,c,j)=>
+      `https://www.apec.fr/candidat/recherche-emploi.html/emploi?motsCles=${encodeURIComponent(q)}&lieux=${encodeURIComponent(w)}` },
+  { name:"HelloWork", build:(q,w,c,j)=>
+      `https://www.hellowork.com/fr-fr/emploi/recherche.html?k=${encodeURIComponent(q)}&l=${encodeURIComponent(w)}${c?`&c=${c}`:""}` },
+  { name:"Glassdoor", build:(q,w,c,j)=>
+      `https://www.glassdoor.fr/Emploi/emplois.htm?sc.keyword=${encodeURIComponent(`${q} ${c}`.trim())}&locT=C&locKeyword=${encodeURIComponent(w)}` },
+  { name:"Jobijoba", build:(q,w,c,j)=>
+      `https://www.jobijoba.com/fr/recherche/?what=${encodeURIComponent(q)}&where=${encodeURIComponent(w)}` },
+  { name:"Sportyjob (emploi sport)", build:(q,w,c,j)=>
+      `https://www.sportyjob.com/fr/recherche?q=${encodeURIComponent(q)}&location=${encodeURIComponent(w)}` },
+  { name:"Profilsport", build:(q,w,c,j)=>
+      `https://www.profilsport.com/offres-emploi?recherche=${encodeURIComponent(q)}` },
+];
+
+function renderLinks(){
+  const q = document.getElementById("lnk-role").value;
+  const w = document.getElementById("lnk-where").value.trim();
+  const c = document.getElementById("lnk-contract").value;
+  const j = document.getElementById("lnk-junior").checked ? "junior débutant" : "";
+  document.getElementById("lnk-list").innerHTML = JOB_SITES.map(s=>
+    `<a class="chip dom" href="${esc(s.build(q,w,c,j))}" target="_blank" rel="noopener">${esc(s.name)} ↗</a>`
+  ).join("");
+
+  // recherche Google ciblée par entreprise prioritaire
+  const prio = targets.filter(t=> t.enabled!==false && t.priority>=4)
+                      .sort((a,b)=> b.priority-a.priority || a.name.localeCompare(b.name));
+  document.getElementById("lnk-companies").innerHTML = prio.map(t=>{
+    const query = `"${t.name}" (emploi OR recrutement OR "offre d'emploi") ${c||""} ${q}`.trim();
+    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    return `<a class="chip" href="${url}" target="_blank" rel="noopener" title="${esc(t.cat||"")}">${esc(t.name)} ↗</a>`;
+  }).join("");
+}
+for(const id of ["lnk-role","lnk-where","lnk-contract","lnk-junior"])
+  document.getElementById(id).addEventListener("input", renderLinks);
 
 /* ============ CSV ============ */
 function exportCsv(){
@@ -1895,7 +2072,7 @@ document.getElementById("list").addEventListener("click",e=>{
   if(e.target.classList.contains("b-applied")) s="applied";
   if(e.target.classList.contains("b-rejected")) s="rejected";
   if(s){ statuses[id] = statuses[id]===s ? undefined : s; if(!statuses[id]) delete statuses[id];
-         store.set("afb_status",statuses); render(); }
+         store.set("afb_status",statuses); syncPushDebounced(); render(); }
 });
 document.getElementById("romes-off").addEventListener("change",e=>{
   document.getElementById("romes").disabled = e.target.checked;
@@ -1903,10 +2080,16 @@ document.getElementById("romes-off").addEventListener("change",e=>{
 });
 document.getElementById("romes").disabled = document.getElementById("romes-off").checked;
 document.getElementById("romes").style.opacity = document.getElementById("romes-off").checked ? .4 : 1;
+document.getElementById("contractchips").addEventListener("click",e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  b.classList.toggle("on");
+  // au moins un type doit rester sélectionné
+  if(!document.querySelector("#contractchips button.on")) b.classList.add("on");
+});
 document.getElementById("btn-load").addEventListener("click",loadAll);
 document.getElementById("btn-csv").addEventListener("click",exportCsv);
 
-renderTargets(); renderKw(); renderExcl(); renderLexicon(); // affiche les listes même avant le premier chargement
+renderTargets(); renderKw(); renderExcl(); renderLexicon(); renderLinks(); // listes visibles avant le 1er chargement
 loadAll(); // chargement auto au démarrage
 </script>
 </body>
