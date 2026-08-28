@@ -38,6 +38,42 @@ alternance-finder/
 - Statuts ★ favori / ✓ candidaté / ✕ rejeté persistés en localStorage,
   badge NEW sur les offres jamais vues, export CSV de la vue filtrée.
 
+⚠️ Ces statuts vivent uniquement dans le navigateur (localStorage) — pas de compte, pas de
+synchronisation entre appareils pour l'instant (option Redis écartée, c'était payant au-delà du
+tier gratuit). Si tu changes d'ordinateur ou de navigateur, tu repars de zéro sur cet appareil.
+
+## CDD / CDI (au-delà de l'alternance)
+
+Sélecteur **Type de contrat** dans les paramètres : Alternance (La bonne alternance), CDD, CDI,
+Intérim. Les CDD/CDI viennent de l'API France Travail, et passent par **exactement le même moteur
+de score** (lexique, entreprises ciblées, filtres d'exclusion) que les alternances. Onglet
+**CDD / CDI** dédié. Le filtre `experience=1` (moins d'un an) est appliqué d'office pour rester
+sur du junior.
+
+### Configuration France Travail (gratuit, sans carte bancaire)
+
+1. Créer un compte sur https://francetravail.io
+2. Créer une application, puis souscrire à l'API **« Offres d'emploi v2 »**
+3. Vercel → Settings → Environment Variables :
+   - `FT_CLIENT_ID` = identifiant client
+   - `FT_CLIENT_SECRET` = clé secrète
+4. Redéployer
+
+Sans ces variables, l'app affiche un message clair et continue de fonctionner normalement pour
+l'alternance — les CDD restent accessibles via le panneau de liens ci-dessous.
+
+## Recherches CDD / emploi junior sur les autres sites
+
+Panneau **🔎 RECHERCHES CDD / EMPLOI JUNIOR** : générateur de liens, aucune API ni clé requise,
+fonctionne immédiatement. Choisis un métier + une zone + un type de contrat, et il construit les
+URLs de recherche déjà remplies pour 11 plateformes : Google Jobs, France Travail, Indeed,
+LinkedIn, Welcome to the Jungle, APEC, HelloWork, Glassdoor, Jobijoba, Sportyjob, Profilsport.
+
+Deuxième bloc : **un lien Google par entreprise prioritaire (★4–5)** de ta watchlist, qui cherche
+directement ses offres du moment (site carrière + LinkedIn + jobboards). C'est le complément
+indispensable aux API — beaucoup de PME sport (Samaya, In&motion, Origine Cycles…) ne publient
+que sur leur propre site ou LinkedIn, et n'apparaîtront jamais dans une API publique.
+
 ## Filtres d'exclusion (le tri sélectif)
 
 En mode recherche large, tout le marché arrive — il faut donc un filtrage aval solide. Deux
